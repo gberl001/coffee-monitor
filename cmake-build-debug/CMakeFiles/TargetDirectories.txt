@@ -1,0 +1,11 @@
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/keg_cooler.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_REBUILD_PROJECT_INDEX.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_UPDATE_ALL.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_UPLOADFS.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_BUILD.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_PROGRAM.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_TEST.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_CLEAN.dir
+/Users/geoffberl/git/keg_cooler/cmake-build-debug/CMakeFiles/PLATFORMIO_UPLOAD.dir
