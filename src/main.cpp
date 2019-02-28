@@ -1,48 +1,36 @@
-/*
- Example using the SparkFun HX711 breakout board with a scale
- By: Nathan Seidle
- SparkFun Electronics
- Date: November 19th, 2014
- License: This code is public domain but you buy me a beer if you use this and we meet someday (Beerware license).
-
- This is the calibration sketch. Use it to determine the calibration_factor that the main example uses. It also
- outputs the zero_factor useful for projects that have a permanent mass on the scale in between power cycles.
-
- Setup your scale and start the sketch WITHOUT a weight on the scale
- Once readings are displayed place the weight on the scale
- Press +/- or a/z to adjust the calibration_factor until the output readings match the known weight
- Use this calibration_factor on the example sketch
-
- This example assumes pounds (lbs). If you prefer kilograms, change the Serial.print(" lbs"); line to kg. The
- calibration factor will be significantly different but it will be linearly related to lbs (1 lbs = 0.453592 kg).
-
- Your calibration factor may be very positive or very negative. It all depends on the setup of your scale system
- and the direction the sensors deflect from zero state
- This example code uses bogde's excellent library: https://github.com/bogde/HX711
- bogde's library is released under a GNU GENERAL PUBLIC LICENSE
- Arduino pin 2 -> HX711 CLK
- 3 -> DOUT
- 5V -> VCC
- GND -> GND
-
- Most any pin on the Arduino Uno will be compatible with DOUT/CLK.
-
- The HX711 board can be powered from 2.7V to 5V so the Arduino 5V power should be fine.
-
-*/
 #include "Arduino.h"
 #include "HX711.h"
+#include <LiquidCrystal.h>
 
 #define DOUT  3
 #define CLK  2
+#define EMPTY 69        // An empty carafe is about 69.25 ounces
+#define FULL_CUP 10     // A full cup is about 10 ounces
+#define SPLAT 73        // At this point you'll get splatter
+#define FULL 150        // A full pot
 
 HX711 scale(DOUT, CLK);
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+double lastBrewTime = 0;
 
 float calibration_factor = -654; //-7050 worked for my 440lb max scale setup
 
+void initScale();
+
+double cupsRemaining(double reading);
+
+bool scaleIsEmpty(double reading);
+
+void waitForNewBrew();
+
+double getAge();
+
 void setup() {
   Serial.begin(115200);
+  lcd.begin(16, 2);                           // Setup LCD
 
+  // Get a good baseline
+  lcd.print("Please Wait...");
   scale.set_scale(calibration_factor);
   delay(1000);  // Small delay for settling
   scale.tare(); // Reset the scale to 0
@@ -50,38 +38,91 @@ void setup() {
 //  float zero_factor = scale.get_units(10); //Get a baseline reading
 //  Serial.print("Zero factor: "); //This can be used to remove the need to tare the scale. Useful in permanent scale projects.
 //  Serial.println(zero_factor);
+
+  // Setup the scale
+  initScale();
 }
+
 
 void loop() {
 
-  Serial.println(scale.get_units(10));
+  // Take a reading
+  double reading = scale.get_units(10);
+
+  // Determine the state
+  if (reading <= SPLAT && !scaleIsEmpty(reading)) {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Empty Container");
+  } else if (reading > SPLAT && !scaleIsEmpty(reading)) {
+    // Calculate the cups remaining
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Age: ");
+    lcd.print(getAge());
+    lcd.setCursor(0, 1);
+    lcd.print("Cups Left: ");
+    lcd.print(cupsRemaining(reading));
+  } else if (scaleIsEmpty(reading)) {
+    // Assume a new batch is being brewed...
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Waiting for");
+    lcd.setCursor(0, 1);
+    lcd.print("next brew");
+    waitForNewBrew();
+    lastBrewTime = millis();
+  }
+
+
 
   delay(1000);
+}
 
-  if(Serial.available()) {
-    char temp = Serial.read();
-    if(temp == '+' || temp == 'a') {
-      calibration_factor += 10;
-      Serial.print("Calibration_factor: ");
-      Serial.print(calibration_factor);
-      Serial.println();
-    } else if(temp == '-' || temp == 'z') {
-      calibration_factor -= 10;
-      Serial.print("Calibration_factor: ");
-      Serial.print(calibration_factor);
-      Serial.println();
-    } else if (temp == 'r' || temp == 'R') {
-      scale.set_scale(calibration_factor); //Adjust to this calibration factor
+double getAge() {
+  return (millis() - lastBrewTime)/1000/60;
+}
 
-      Serial.print("Reading: ");
-      Serial.print(scale.get_units(10), 5);
-      Serial.print(" lbs"); //Change this to kg and re-adjust the calibration factor if you follow SI units like a sane person
-      Serial.print("; calibration_factor: ");
-      Serial.print(calibration_factor);
-      Serial.println();
-    } else if (temp == 't' || temp == 'T') {
-      scale.tare(10);
-      Serial.println("Tare complete!");
-    }
+void waitForNewBrew() {
+  while (scaleIsEmpty(scale.get_units(10))) {
+    delay(4000);
   }
+}
+
+bool scaleIsEmpty(double reading) {
+  return reading < 10.0;
+}
+
+double cupsRemaining(double reading) {
+  return (reading - SPLAT) / FULL_CUP;
+}
+
+void initScale() {
+  // Ready
+  lcd.clear();
+  lcd.print("Ready");
+  lcd.setCursor(0, 1);
+  lcd.print("Add container");
+
+  // Wait for scale to have weight added to it.
+  while (scale.get_units(10) < 1.0) {
+    delay(4000);
+  }
+
+//  while(true) {
+//    lcd.clear();
+//    lcd.print(newReading = scale.get_units(10));
+//
+//    // Determine if it's empty or not
+//    if (newReading < EMPTY * 1.15 && newReading > EMPTY * 0.85) {
+//      lcd.setCursor(0, 1);
+//      lcd.print("Empty!");
+//    } else {
+//      lcd.setCursor(0, 1);
+//      lcd.print(newReading);
+//    }
+//    delay(1000);
+//  }
+
+
 }
