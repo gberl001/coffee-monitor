@@ -4,14 +4,16 @@
 
 #define DOUT  3
 #define CLK  2
-#define EMPTY 69        // An empty carafe is about 69.25 ounces
-#define FULL_CUP 10     // A full cup is about 10 ounces
-#define SPLAT 73        // At this point you'll get splatter
-#define FULL 150        // A full pot
+#define EMPTY       69          // An empty carafe is about 69.25 ounces
+#define FULL_CUP    10          // A full cup is about 10 ounces
+#define SPLAT       73          // At this point you'll get splatter
+#define FULL        150         // A full pot
+#define MINUTES_IN_HOUR     60           // 60 Minutes in an hour
+#define MILLIS_IN_MINUTE    60000        // 60000 ms in a minute
 
 HX711 scale(DOUT, CLK);
 LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
-double lastBrewTime = 0;
+long lastBrewTime = 0;
 
 float calibration_factor = -654; //-7050 worked for my 440lb max scale setup
 
@@ -23,7 +25,7 @@ bool scaleIsEmpty(double reading);
 
 void waitForNewBrew();
 
-double getAge();
+String getAgeString();
 
 void setup() {
   Serial.begin(115200);
@@ -59,7 +61,7 @@ void loop() {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print("Age: ");
-    lcd.print(getAge());
+    lcd.print(getAgeString());
     lcd.setCursor(0, 1);
     lcd.print("Cups Left: ");
     lcd.print(cupsRemaining(reading));
@@ -79,8 +81,16 @@ void loop() {
   delay(1000);
 }
 
-double getAge() {
-  return (millis() - lastBrewTime)/1000/60;
+String getAgeString() {
+    long minutes = (millis() - lastBrewTime) / MILLIS_IN_MINUTE;
+
+    // Compute the hours
+    String strHours = String(floor(minutes / MINUTES_IN_HOUR), 0) + "H ";
+
+    // Compute the remaining minutes
+    String strMinutes = String(minutes % MINUTES_IN_HOUR) + "M";
+
+  return String(strHours + strMinutes);
 }
 
 void waitForNewBrew() {
