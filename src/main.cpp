@@ -6,6 +6,7 @@
 #define CLK  2
 #define FULL_CUP              10          // A full cup is about 10 ounces
 #define SPLATTER_POINT        73          // At this point you'll get splatter, and empty carafe is actually 69.25oz
+#define EMPTY_CARAFE          69          // An empty carafe is about 69.25oz
 #define FULL_CARAFE           150         // A full carafe is about 150oz
 #define EMPTY_SCALE_THRESHOLD 10          // Assume the scale is empty at 10 ounces
 #define MINUTES_IN_HOUR     60            // 60 Minutes in an hour
@@ -27,6 +28,7 @@ void handleEmptyScale();
 void handleCarafeEmpty();
 void handleCarafeNotEmpty(double reading);
 double getScaleReading();
+bool carafeIsEmpty(double reading);
 
 
 void setup() {
@@ -50,15 +52,15 @@ void loop() {
   double reading = getScaleReading();
 
   // Determine the state
-  if (reading <= SPLATTER_POINT && !scaleIsEmpty(reading)) {
-    handleCarafeEmpty();
-  } else if (reading > SPLATTER_POINT && !scaleIsEmpty(reading)) {
-    handleCarafeNotEmpty(reading);
-  } else if (scaleIsEmpty(reading)) {
+  if (scaleIsEmpty(reading)) {
     handleEmptyScale();
+  } else if (carafeIsEmpty(reading)) {
+    handleCarafeEmpty();
+  } else if (!carafeIsEmpty(reading)) {
+    handleCarafeNotEmpty(reading);
   }
 
-  delay(1000);
+  delay(4000);
 }
 
 // *******************************************************************************************************
@@ -140,18 +142,31 @@ bool scaleIsEmpty(double reading) {
   return reading < EMPTY_SCALE_THRESHOLD;
 }
 
+bool carafeIsEmpty(double reading) {
+  // If the reading is between empty and where the coffee splatters...
+  return reading >= EMPTY_CARAFE && reading <= SPLATTER_POINT;
+}
+
 double getCupsRemaining(double reading) {
   return (reading - SPLATTER_POINT) / FULL_CUP;
 }
 
 double getScaleReading() {
-  double currentReading = scale.get_units(10);
-
-  // If the scale isn't empty, record the last weight
-  if (!scaleIsEmpty(currentReading)) {
-    latestRecordedWeight = scale.get_units(10);
+  // Keep taking readings one second apart until they are within 1 ounce of each other (indicating stability)
+  // This should ensure a reading isn't taken while weight is added or removed from the scale
+  double firstReading = 0;
+  double secondReading = 10;
+  while (abs(firstReading - secondReading) >= 1) {
+    firstReading = scale.get_units(10);
+    delay(1000);
+    secondReading = scale.get_units(10);
   }
 
-  return currentReading;
+  // If the scale isn't empty, record the last weight
+  if (!scaleIsEmpty(secondReading)) {
+    latestRecordedWeight = secondReading;
+  }
+
+  return secondReading;
 }
 
