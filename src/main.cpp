@@ -11,6 +11,7 @@
 #define EMPTY_SCALE_THRESHOLD 10          // Assume the scale is empty at 10 ounces
 #define MINUTES_IN_HOUR     60            // 60 Minutes in an hour
 #define MILLIS_IN_MINUTE    60000         // 60000 ms in a minute
+#define EVENT_PIN           4             // The pin that will send out an event notification
 
 // ************ Object and variable declarations **************
 HX711 scale(DOUT, CLK);
@@ -29,11 +30,15 @@ void handleCarafeEmpty();
 void handleCarafeNotEmpty(double reading);
 double getScaleReading();
 bool carafeIsEmpty(double reading);
-
+void handleFreshBrew();
 
 void setup() {
   // Setup LCD display
   lcd.begin(16, 2);
+
+  // Enable the event pin as output
+  pinMode(EVENT_PIN, OUTPUT);
+  digitalWrite(EVENT_PIN, LOW);
 
   // Get a good baseline and tare the scale
   lcd.print("Please Wait...");
@@ -97,14 +102,24 @@ void handleEmptyScale() {
   lcd.setCursor(0, 1);
   lcd.print("next brew");
   while (scaleIsEmpty(getScaleReading())) {
-    delay(4000);
+    delay(2000);
   }
 
   // Now that the scale isn't empty, determine if more coffee was added
   if (latestRecordedWeight > previousWeight + FULL_CUP) {
     // If the new wight is at least one more cup of coffee more than the old, assume a new brew
-    lastBrewTime = millis();
+    handleFreshBrew();
   }
+}
+
+void handleFreshBrew() {
+  // Update the last brew time
+  lastBrewTime = millis();
+
+  // Notify the WiFi module driving the event pin HIGH for half a second
+  digitalWrite(EVENT_PIN, HIGH);
+  delay(500);
+  digitalWrite(EVENT_PIN, LOW);
 }
 
 void initScale() {
@@ -116,7 +131,7 @@ void initScale() {
 
   // Wait for scale to have weight added to it.
   while (getScaleReading() < 1.0) {
-    delay(4000);
+    delay(2000);
   }
 }
 
