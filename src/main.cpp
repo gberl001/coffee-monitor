@@ -1,6 +1,6 @@
 #include "Arduino.h"
 #include "HX711.h"
-#include <LiquidCrystal.h>
+#include <LiquidCrystal_I2C.h>
 
 #define DOUT  3
 #define CLK  2
@@ -12,13 +12,14 @@
 #define MINUTES_IN_HOUR     60            // 60 Minutes in an hour
 #define MILLIS_IN_MINUTE    60000         // 60000 ms in a minute
 #define EVENT_PIN           4             // The pin that will send out an event notification
+#define SERIAL_DEBUG        0             // Set to 1 to have statements printed to the monitor
 
 // ************ Object and variable declarations **************
 HX711 scale(DOUT, CLK);
-LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+LiquidCrystal_I2C lcd(0x27,20,4);
 long lastBrewTime = 0;
 double latestRecordedWeight = 0.0;
-float calibration_factor = -654;  // Adjust the weight calibration, tested with 250g and 500g weights
+float calibration_factor = -580;  // Adjust the weight calibration, tested with 250g and 500g weights
 
 // ********************** Function declarations ****************
 void initScale();
@@ -33,8 +34,12 @@ bool carafeIsEmpty(double reading);
 void handleFreshBrew();
 
 void setup() {
+#if SERIAL_DEBUG > 0
+  Serial.begin(9600);
+#endif
   // Setup LCD display
-  lcd.begin(16, 2);
+  lcd.init();
+  lcd.backlight();
 
   // Enable the event pin as output
   pinMode(EVENT_PIN, OUTPUT);
@@ -102,6 +107,11 @@ void handleEmptyScale() {
   lcd.setCursor(0, 1);
   lcd.print("next brew");
   while (scaleIsEmpty(getScaleReading())) {
+#if SERIAL_DEBUG > 0
+    Serial.println("Tare");
+#endif
+    // TODO: This may be causing problems more than it is solving them
+    scale.tare();
     delay(2000);
   }
 
@@ -176,6 +186,11 @@ double getScaleReading() {
     delay(1000);
     secondReading = scale.get_units(10);
   }
+
+#if SERIAL_DEBUG > 0
+  Serial.print("Reading is ");
+  Serial.println(secondReading);
+#endif
 
   // If the scale isn't empty, record the last weight
   if (!scaleIsEmpty(secondReading)) {

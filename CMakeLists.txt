@@ -4,6 +4,7 @@ project(coffee-monitor)
 include(CMakeListsPrivate.txt)
 
 include_directories(".piolibdeps/HX711")
+include_directories(".piolibdeps/LiquidCrystal_I2C")
 
 add_custom_target(
     PLATFORMIO_BUILD ALL
