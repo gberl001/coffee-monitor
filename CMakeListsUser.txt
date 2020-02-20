@@ -1,0 +1,5 @@
+set(SRC_LIST "src/main.cpp")
+
+include_directories(".pio/libdeps/nanoatmega328/LiquidCrystal_I2C")
+include_directories("lib/HX711")
+# include_directories(".pio/libdeps/nanoatmega328/HX711/src")
